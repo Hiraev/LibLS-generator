@@ -1,0 +1,49 @@
+buildscript {
+    dependencies{
+        classpath files('libs/libsl.jar')
+    }
+}
+
+plugins {
+    id 'java'
+    id 'org.jetbrains.kotlin.jvm' version '1.3.61'
+}
+
+group 'Polytech'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs 'libs'
+    }
+
+//    maven { url 'https://www.h31.ishere.ru/ModelParser' }
+//    maven { url 'https://maven.pkg.github.com/h31' }
+}
+
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+
+    compile 'com.github.cretz.kastree:kastree-ast-jvm:0.4.0'
+    compile 'com.github.cretz.kastree:kastree-ast-psi:0.4.0'
+//    compile 'ru.spbstu.kspt.librarymigration:modelparser:0.4-SNAPSHOT'
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.freeCompilerArgs = ['-Xplugin=/Users/Malik/IdeaProjects/LibLS-generator/libsl-kt-plugin/build/libs/kotlin-compiler-plugin-0.0.1.jar']
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+build {
+
+}

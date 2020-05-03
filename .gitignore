@@ -1,0 +1,5 @@
+# Project exclude paths
+/.gradle/
+/build/
+/libsl-kt-plugin/build/
+/libsl-plugin/build/
