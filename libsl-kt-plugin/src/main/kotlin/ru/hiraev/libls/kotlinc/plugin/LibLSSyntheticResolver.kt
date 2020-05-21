@@ -4,11 +4,16 @@ import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.com.intellij.lang.ASTNode
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.calls.inference.returnTypeOrNothing
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.lazy.LazyClassContext
 import org.jetbrains.kotlin.resolve.lazy.declarations.ClassMemberDeclarationProvider
 import org.jetbrains.kotlin.resolve.lazy.declarations.PackageMemberDeclarationProvider
+import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
+import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyPackageDescriptor
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.source.getPsi
 import org.jetbrains.kotlin.types.KotlinType
 import java.io.BufferedWriter
@@ -37,6 +42,9 @@ class LibLSSyntheticResolver : SyntheticResolveExtension {
         declarationProvider: ClassMemberDeclarationProvider,
         result: MutableSet<ClassDescriptor>
     ) {
+        result.forEach {
+            parseClassDescriptor("first", it)
+        }
         var node: ASTNode? = thisDescriptor.source.getPsi()?.node?.firstChildNode
 
         //writer.write("::Second: ${name.asString()} ${name.identifier} ${thisDescriptor.kind.name} ${thisDescriptor.findPsi()?.node}} ${thisDescriptor.defaultType}\n ")
@@ -61,9 +69,56 @@ class LibLSSyntheticResolver : SyntheticResolveExtension {
         declarationProvider: PackageMemberDeclarationProvider,
         result: MutableSet<ClassDescriptor>
     ) {
+        result.forEach {
+            parseClassDescriptor("second", it)
+        }
+        (thisDescriptor as? LazyPackageDescriptor)?.let {
+            it.declarationProvider.getDeclarations(DescriptorKindFilter.ALL) { _ -> true }.forEach {
+                parseKtDeclaration(it)
+            }
+        }
+        declarationProvider.getDeclarations(DescriptorKindFilter.ALL) { _ -> true }.forEach {
+            parseKtDeclaration(it)
+        }
         // (thisDescriptor as LazyPackageDescriptor).declarationProvider.getDeclarations(DescriptorKindFilter.FUNCTIONS, {d -> true})
         val a = 1
         super.generateSyntheticClasses(thisDescriptor, name, ctx, declarationProvider, result)
+    }
+
+    private fun parseClassDescriptor(functionNumber: String, desc: ClassDescriptor) {
+        val aa = desc.kind
+        (desc as? LazyClassDescriptor)?.declaredCallableMembers?.forEach(::parseDeclaredCallableMember)
+    }
+
+    private fun parseDeclaredCallableMember(callableMemberDescriptor: CallableMemberDescriptor) {
+        val type = callableMemberDescriptor.returnType
+        val a = type?.arguments
+    }
+
+    private fun parseKtDeclaration(decl: KtDeclaration) {
+        typeReferenceRecursiveVisitor {
+            it.typeElement
+        }
+        val type = when (decl) {
+            is KtNamedFunction -> {
+                decl.typeReference
+            }
+            is KtProperty -> {
+                decl.typeReference
+            }
+            else -> null
+        }
+        val name = decl.name
+        when (decl) {
+            is KtClass -> {
+                decl.declarations.forEach(::parseKtDeclaration)
+            }
+            is KtObjectDeclaration -> {
+                decl.declarations.forEach(::parseKtDeclaration)
+            }
+        }
+        // (type.typeElement as KtUserType).referencedName
+        val aa = type?.typeElement
     }
 
     // Good

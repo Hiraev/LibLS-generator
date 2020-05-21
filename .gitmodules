@@ -1,0 +1,3 @@
+[submodule "kastree"]
+	path = kastree
+	url = git@github.com:Hiraev/kastree

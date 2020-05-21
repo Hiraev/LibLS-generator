@@ -12,7 +12,9 @@ object LibLsProcessor {
     private val candidatesProperties = mutableListOf<Node.Decl.Property>()
 
     fun resolveTypeIfNeeded() {
+        for (candidatesProperty in candidatesProperties) {
 
+        }
     }
 
     fun findAllResolutionCandidates() {

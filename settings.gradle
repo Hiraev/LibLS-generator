@@ -1,2 +1,11 @@
 rootProject.name = 'LibLS-generator'
-include(':libsl-plugin', ':libsl-kt-plugin')
+//include(
+//        'libsl-plugin',
+//        'libsl-kt-plugin',
+//        'kastree:ast:ast-common',
+//        'kastree:ast-psi'
+//)
+include(
+        'libsl-plugin',
+        'libsl-kt-plugin'
+)
