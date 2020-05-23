@@ -1,7 +1,7 @@
 package ru.hiraev.libls.kotlinc.plugin
 
 //@AutoService(CommandLineProcessor::class)
-//class LibLSCommandLineProcessor : CommandLineProcessor {
+//class LibSLCommandLineProcessor : CommandLineProcessor {
 //
 //    override val pluginId = "libls"
 //

@@ -20,35 +20,36 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 class LibSLAnalysisHandlerExtension : AnalysisHandlerExtension {
 
     override fun doAnalysis(
-        project: Project,
-        module: ModuleDescriptor,
-        projectContext: ProjectContext,
-        files: Collection<KtFile>,
-        bindingTrace: BindingTrace,
-        componentProvider: ComponentProvider
+            project: Project,
+            module: ModuleDescriptor,
+            projectContext: ProjectContext,
+            files: Collection<KtFile>,
+            bindingTrace: BindingTrace,
+            componentProvider: ComponentProvider
     ): AnalysisResult? {
         parseFiles(files)
-        LibLsProcessor.findAllResolutionCandidates()
         return super.doAnalysis(project, module, projectContext, files, bindingTrace, componentProvider)
     }
 
     override fun analysisCompleted(
-        project: Project,
-        module: ModuleDescriptor,
-        bindingTrace: BindingTrace,
-        files: Collection<KtFile>
+            project: Project,
+            module: ModuleDescriptor,
+            bindingTrace: BindingTrace,
+            files: Collection<KtFile>
     ): AnalysisResult? {
-        LibLsProcessor.onCompleteAnalysis()
+        LibSLProjectProcessor.onCompleteAnalysis()
         return super.analysisCompleted(project, module, bindingTrace, files)
     }
 
-    private fun parseKtFile(ktFile: KtFile): Node.File {
-        return Converter.convertFile(ktFile)
+    private fun parseFiles(files: Collection<KtFile>) {
+        files.mapNotNull(::parseKtFile).let(LibSLProjectProcessor::addAllFiles)
     }
 
-    // TODO(Parse each file in try-catch block)
-    private fun parseFiles(files: Collection<KtFile>) {
-        files.map(::parseKtFile).let(LibLsProcessor.structuredProject::addAll)
+    private fun parseKtFile(ktFile: KtFile): Node.File? = try {
+        Converter.convertFile(ktFile)
+    } catch (t: Throwable) {
+        // Message with exception may be written in a log file
+        null
     }
 
 }
