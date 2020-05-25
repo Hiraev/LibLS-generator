@@ -1,9 +1,14 @@
 package ru.hiraev.libls.kotlinc.plugin
 
 import kastree.ast.Node
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
+import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.resolve.descriptorUtil.isEffectivelyPublicApi
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
 object LibSLProjectProcessor {
 
@@ -13,6 +18,7 @@ object LibSLProjectProcessor {
     private val properties = mutableListOf<PropertyDescriptor>()
     private val topLevelFunctions = mutableListOf<FunctionDescriptor>()
     private val topLevelProperties = mutableListOf<PropertyDescriptor>()
+    private val scopes = mutableListOf<MemberScope>()
 
     fun addAllFiles(files: Collection<Node.File>) {
         structuredProject += files
@@ -26,16 +32,31 @@ object LibSLProjectProcessor {
         properties += prop_
     }
 
-    fun addTopLevelFunction(function: FunctionDescriptor) {
-        topLevelFunctions += function
-    }
-
-    fun addTopLevelProperty(property: PropertyDescriptor) {
-        topLevelProperties += property
+    fun addScope(scope: MemberScope) {
+        scopes += scope
     }
 
     fun onCompleteAnalysis() {
+        findTopLevelDescriptors()
         // TODO
+    }
+
+    private fun findTopLevelDescriptors() {
+        scopes.forEach {
+            findAndAddPropertiesAndFunctions(DescriptorUtils.getAllDescriptors(it))
+        }
+        scopes.clear()
+    }
+
+    private fun findAndAddPropertiesAndFunctions(descriptors: Collection<DeclarationDescriptor>) {
+        descriptors
+                .filterIsInstance(DeclarationDescriptorWithVisibility::class.java)
+                .filter(DeclarationDescriptorWithVisibility::isEffectivelyPublicApi).forEach { declarationDescriptor ->
+                    when (declarationDescriptor) {
+                        is PropertyDescriptor -> topLevelProperties += declarationDescriptor
+                        is FunctionDescriptor -> topLevelFunctions += declarationDescriptor
+                    }
+                }
     }
 
 }

@@ -3,14 +3,12 @@ package ru.hiraev.libls.kotlinc.plugin
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.isEffectivelyPublicApi
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.lazy.LazyClassContext
@@ -30,12 +28,8 @@ class LibSLSyntheticResolver : SyntheticResolveExtension {
     ) {
         val fqName = thisDescriptor.fqName
         if (!visitedPackages.contains(fqName)) {
-            try {
-                val descriptors = DescriptorUtils.getAllDescriptors(thisDescriptor.getMemberScope())
-                findAndAddPropertiesAndFunctions(descriptors)
-                visitedPackages += thisDescriptor.fqName
-            } catch (e: Throwable) {
-            }
+            LibSLProjectProcessor.addScope(thisDescriptor.getMemberScope())
+            visitedPackages += fqName
         }
         super.generateSyntheticClasses(thisDescriptor, name, ctx, declarationProvider, result)
     }
@@ -64,17 +58,6 @@ class LibSLSyntheticResolver : SyntheticResolveExtension {
                     .forEach(LibSLProjectProcessor::addProperty)
         }
         super.generateSyntheticProperties(thisDescriptor, name, bindingContext, fromSupertypes, result)
-    }
-
-    private fun findAndAddPropertiesAndFunctions(descriptors: Collection<DeclarationDescriptor>) {
-        descriptors
-                .filterIsInstance(DeclarationDescriptorWithVisibility::class.java)
-                .filter(DeclarationDescriptorWithVisibility::isEffectivelyPublicApi).forEach { declarationDescriptor ->
-                    when (declarationDescriptor) {
-                        is PropertyDescriptor -> LibSLProjectProcessor.addTopLevelProperty(declarationDescriptor)
-                        is FunctionDescriptor -> LibSLProjectProcessor.addTopLevelFunction(declarationDescriptor)
-                    }
-                }
     }
 
     private fun checkIfTopDescriptorsPublic(descriptor: DeclarationDescriptor): Boolean {
