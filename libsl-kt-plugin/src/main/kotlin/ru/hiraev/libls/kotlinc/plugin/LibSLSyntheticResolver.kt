@@ -1,19 +1,14 @@
 package ru.hiraev.libls.kotlinc.plugin
 
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.isEffectivelyPublicApi
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.lazy.LazyClassContext
+import org.jetbrains.kotlin.resolve.lazy.declarations.ClassMemberDeclarationProvider
 import org.jetbrains.kotlin.resolve.lazy.declarations.PackageMemberDeclarationProvider
-import java.util.ArrayList
 
 class LibSLSyntheticResolver : SyntheticResolveExtension {
 
@@ -34,40 +29,19 @@ class LibSLSyntheticResolver : SyntheticResolveExtension {
         super.generateSyntheticClasses(thisDescriptor, name, ctx, declarationProvider, result)
     }
 
-    override fun generateSyntheticMethods(
-            thisDescriptor: ClassDescriptor,
-            name: Name, bindingContext: BindingContext,
-            fromSupertypes: List<SimpleFunctionDescriptor>,
-            result: MutableCollection<SimpleFunctionDescriptor>
-    ) {
-        if (checkIfTopDescriptorsPublic(thisDescriptor)) {
-            result.filter(DeclarationDescriptorWithVisibility::isEffectivelyPublicApi).forEach(LibSLProjectProcessor::addFun)
-        }
-        super.generateSyntheticMethods(thisDescriptor, name, bindingContext, fromSupertypes, result)
-    }
-
-    override fun generateSyntheticProperties(
+    override fun generateSyntheticClasses(
             thisDescriptor: ClassDescriptor,
             name: Name,
-            bindingContext: BindingContext,
-            fromSupertypes: ArrayList<PropertyDescriptor>,
-            result: MutableSet<PropertyDescriptor>
+            ctx: LazyClassContext,
+            declarationProvider: ClassMemberDeclarationProvider,
+            result: MutableSet<ClassDescriptor>
     ) {
-        if (checkIfTopDescriptorsPublic(thisDescriptor)) {
-            result.filter(DeclarationDescriptorWithVisibility::isEffectivelyPublicApi)
-                    .forEach(LibSLProjectProcessor::addProperty)
+        val fqName = thisDescriptor.fqNameSafe
+        if (!visitedPackages.contains(fqName)) {
+            LibSLProjectProcessor.addScope(thisDescriptor.unsubstitutedMemberScope)
+            visitedPackages += fqName
         }
-        super.generateSyntheticProperties(thisDescriptor, name, bindingContext, fromSupertypes, result)
-    }
-
-    private fun checkIfTopDescriptorsPublic(descriptor: DeclarationDescriptor): Boolean {
-        return if (descriptor is PackageFragmentDescriptor) {
-            true
-        } else {
-            if ((descriptor as? ClassDescriptor)?.isEffectivelyPublicApi == true) {
-                checkIfTopDescriptorsPublic(descriptor.containingDeclaration)
-            } else false
-        }
+        super.generateSyntheticClasses(thisDescriptor, name, ctx, declarationProvider, result)
     }
 
 }
