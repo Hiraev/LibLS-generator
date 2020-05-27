@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.lazy.LazyClassContext
 import org.jetbrains.kotlin.resolve.lazy.declarations.ClassMemberDeclarationProvider
 import org.jetbrains.kotlin.resolve.lazy.declarations.PackageMemberDeclarationProvider
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
 class LibSLSyntheticResolver : SyntheticResolveExtension {
 
@@ -21,11 +22,11 @@ class LibSLSyntheticResolver : SyntheticResolveExtension {
             declarationProvider: PackageMemberDeclarationProvider,
             result: MutableSet<ClassDescriptor>
     ) {
-        val fqName = thisDescriptor.fqName
-        if (!visitedPackages.contains(fqName)) {
-            LibSLProjectProcessor.addScope(thisDescriptor.getMemberScope())
-            visitedPackages += fqName
-        }
+        checkScopeAndDoIfNeeded(
+                thisDescriptor.fqName,
+                thisDescriptor.getMemberScope(),
+                LibSLProjectProcessor::addPackageScope
+        )
         super.generateSyntheticClasses(thisDescriptor, name, ctx, declarationProvider, result)
     }
 
@@ -36,12 +37,19 @@ class LibSLSyntheticResolver : SyntheticResolveExtension {
             declarationProvider: ClassMemberDeclarationProvider,
             result: MutableSet<ClassDescriptor>
     ) {
-        val fqName = thisDescriptor.fqNameSafe
+        checkScopeAndDoIfNeeded(
+                thisDescriptor.fqNameSafe,
+                thisDescriptor.unsubstitutedMemberScope,
+                LibSLProjectProcessor::addClassScope
+        )
+        super.generateSyntheticClasses(thisDescriptor, name, ctx, declarationProvider, result)
+    }
+
+    private fun checkScopeAndDoIfNeeded(fqName: FqName, scope: MemberScope, block: (MemberScope) -> Unit) {
         if (!visitedPackages.contains(fqName)) {
-            LibSLProjectProcessor.addScope(thisDescriptor.unsubstitutedMemberScope)
+            block.invoke(scope)
             visitedPackages += fqName
         }
-        super.generateSyntheticClasses(thisDescriptor, name, ctx, declarationProvider, result)
     }
 
 }
