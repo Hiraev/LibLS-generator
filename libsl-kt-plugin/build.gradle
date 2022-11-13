@@ -14,6 +14,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     compileOnly "org.jetbrains.kotlin:kotlin-compiler-embeddable:1.3.61"
 
+    compile project(":libsl-declaration")
     compile 'com.github.cretz.kastree:kastree-ast-jvm:0.4.0'
     compile 'com.github.cretz.kastree:kastree-ast-psi:0.4.0'
 

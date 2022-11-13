@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.js.descriptorUtils.getJetTypeFqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.isCompanionObject
+import org.jetbrains.kotlin.resolve.descriptorUtil.isEffectivelyPublicApi
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyPackageDescriptor
 import ru.hiraev.libls.kotlinc.plugin.model.IntermediateEnumEntry
@@ -40,7 +41,7 @@ object IntermediateFormConverter {
     private fun convertClassProperty(descriptor: PropertyDescriptor) =
             IntermediateProperty.ClassLevel(
                     name = descriptor.fqNameSafe.asString(),
-                    mutable = descriptor.isVar,
+                    mutable = isPropertyMutableFromOuterScope(descriptor),
                     type = descriptor.type.getJetTypeFqName(true),
                     containingTypeName = descriptor.containingDeclaration.fqNameSafe.asString()
             )
@@ -48,8 +49,12 @@ object IntermediateFormConverter {
     private fun convertPackageOrObjectProperty(descriptor: PropertyDescriptor) =
             IntermediateProperty.PackageOrObjectLevel(
                     name = descriptor.fqNameSafe.asString(),
-                    mutable = descriptor.isVar,
+                    mutable = isPropertyMutableFromOuterScope(descriptor),
                     type = descriptor.type.getJetTypeFqName(true)
             )
+
+    // Check if setter is private for properties
+    private fun isPropertyMutableFromOuterScope(descriptor: PropertyDescriptor) =
+            descriptor.isVar && descriptor.setter?.isEffectivelyPublicApi != false
 
 }
